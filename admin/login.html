@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Staff Login | Dr. Smita Karpe</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+<link href="css/admin.css" rel="stylesheet">
+</head>
+<body>
+<div class="login-wrap"><div class="login-card">
+  <div class="text-center mb-4">
+    <div class="brand-mark mx-auto mb-3"><i class="bi bi-flower1"></i></div>
+    <h1 class="h3 mb-1">Clinic Dashboard</h1>
+    <p class="text-muted small mb-0">Dr. Smita Karpe · Madhavbaug Clinic, Airoli</p>
+  </div>
+  <div id="alert" class="alert d-none small" role="alert"></div>
+  <form id="loginForm" novalidate>
+    <div class="mb-3"><label class="form-label" for="email">Email</label>
+      <input class="form-control form-control-lg" id="email" type="email" autocomplete="username" required></div>
+    <div class="mb-2"><label class="form-label" for="pass">Password</label>
+      <div class="input-group"><input class="form-control form-control-lg" id="pass" type="password" autocomplete="current-password" required>
+      <button class="btn btn-outline-secondary" type="button" id="eye" aria-label="Show password"><i class="bi bi-eye"></i></button></div></div>
+    <div class="text-end mb-3"><a href="#" id="forgot" class="small">Forgot password?</a></div>
+    <button class="btn-brand w-100 py-2" id="go" type="submit">Sign in</button>
+  </form>
+  <p class="text-center small mt-4 mb-0"><a href="../index.html" class="text-muted"><i class="bi bi-arrow-left"></i> Back to website</a></p>
+</div></div>
+
+<script type="module">
+import { auth, configured } from "../js/firebase.js";
+import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const $ = id => document.getElementById(id), box = $("alert");
+const show = (msg, type = "danger") => { box.className = "alert small alert-" + type; box.textContent = msg; };
+const ERR = {
+  "auth/invalid-credential": "Incorrect email or password.", "auth/invalid-email": "Please enter a valid email.",
+  "auth/user-disabled": "This account has been disabled.", "auth/too-many-requests": "Too many attempts. Try again in a few minutes.",
+  "auth/network-request-failed": "Network error. Check your connection.", "auth/missing-password": "Please enter your password."
+};
+
+if (!configured) show("Firebase is not configured yet. Paste your keys in js/firebase-config.js (see README).", "warning");
+else {
+  if (new URLSearchParams(location.search).has("denied")) show("This account does not have dashboard access.");
+  onAuthStateChanged(auth, u => { if (u && !location.search.includes("denied")) location.replace("index.html"); });
+}
+
+$("eye").onclick = () => { const p = $("pass"); p.type = p.type === "password" ? "text" : "password"; $("eye").firstElementChild.className = "bi bi-eye" + (p.type === "text" ? "-slash" : ""); };
+
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!configured) return;
+  const btn = $("go"); btn.disabled = true; btn.textContent = "Signing in…"; box.className = "d-none";
+  try { await signInWithEmailAndPassword(auth, $("email").value.trim(), $("pass").value); location.replace("index.html"); }
+  catch (err) { show(ERR[err.code] || "Could not sign in. Please try again."); btn.disabled = false; btn.textContent = "Sign in"; }
+});
+
+$("forgot").onclick = async e => {
+  e.preventDefault();
+  const em = $("email").value.trim();
+  if (!em) return show("Enter your email above first, then click “Forgot password?”.", "warning");
+  try { await sendPasswordResetEmail(auth, em); show("Password reset link sent. Check your inbox.", "success"); }
+  catch (err) { show(ERR[err.code] || "Could not send reset email."); }
+};
+</script>
+</body>
+</html>

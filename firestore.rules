@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // An admin is any signed-in user who has a document at admins/<their uid> (created by hand in the console).
+    function isAdmin() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function str(f, max) { return f is string && f.size() <= max; }
+
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Website visitors may only create; only admins can read / change / delete.
+    match /appointments/{id} {
+      allow create: if request.resource.data.keys().hasOnly(
+            ['name','phone','email','date','concern','consultation','message','status','createdAt'])
+          && str(request.resource.data.name, 100) && request.resource.data.name.size() > 0
+          && str(request.resource.data.phone, 20) && request.resource.data.phone.size() > 5
+          && str(request.resource.data.email, 120) && str(request.resource.data.date, 10)
+          && str(request.resource.data.concern, 80) && str(request.resource.data.consultation, 40)
+          && str(request.resource.data.message, 1000)
+          && request.resource.data.status == 'new'
+          && request.resource.data.createdAt == request.time;
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /healthChecks/{id} {
+      allow create: if request.resource.data.keys().hasOnly(
+            ['name','age','sex','phone','score','level','bmi','waist','flag','lang','answers','createdAt'])
+          && str(request.resource.data.name, 100) && request.resource.data.name.size() > 0
+          && request.resource.data.age is number && request.resource.data.score is number
+          && request.resource.data.level is number && request.resource.data.flag is bool
+          && request.resource.data.answers is map
+          && request.resource.data.createdAt == request.time;
+      allow read, delete: if isAdmin();
+      allow update: if false;
+    }
+  }
+}

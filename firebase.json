@@ -1,0 +1,10 @@
+{
+  "firestore": { "rules": "firestore.rules" },
+  "hosting": {
+    "public": ".",
+    "ignore": ["firebase.json", "firestore.rules", ".firebaserc", "Code.gs", "README.md", "**/.*", "**/node_modules/**"],
+    "headers": [
+      { "source": "/admin/**", "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }, { "key": "Cache-Control", "value": "no-cache" }] }
+    ]
+  }
+}
